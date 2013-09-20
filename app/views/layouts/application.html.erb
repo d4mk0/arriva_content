@@ -7,7 +7,12 @@
   <%= csrf_meta_tags %>
 </head>
 <body>
-
+  <div id="header">
+    <%= link_to "Показать сеансы", show_seances_path %>
+    <%= link_to "Добавить кинотеатр", cinema_new_path %>
+    <%= link_to "Добавить кинозал", new_hall_path %>
+    <%= link_to "Спарсить сеансы", parse_seances_path %>
+  </div>
 <%= yield %>
 
 </body>

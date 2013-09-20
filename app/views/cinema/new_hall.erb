@@ -1,0 +1,29 @@
+<h2>Добавление кинозала</h2>
+<div><%= flash[:notice] %></div>
+<%= form_for :hall, url: create_hall_path do |f| %>
+  <div>
+    <%= f.label "Выберите кинотеатр" %>
+    <%= f.select :cinema_id , options_for_select(@cinemas_map) %>
+  </div>
+  <div>
+    <%= f.label "Название зала" %>
+    <%= f.text_field :name %>
+  </div>
+  <div>
+    <%= f.label "id зала на arriv'e" %>
+    <%= f.text_field :id_at_arriva %>
+  </div>
+  <div>
+    <%= f.submit %>
+  </div>
+<% end %>
+<div>
+  <h4>Все кинозалы</h4>
+  <% @cinemas.each do |c| %>
+    <h5><%= c.name %></h5>
+    <div><%= "Нет кинозалов" if c.halls.empty? %></div>
+    <% c.halls.each do |h| %>
+      <div><%= h.name %></div>
+    <% end %>
+  <% end %>
+</div>

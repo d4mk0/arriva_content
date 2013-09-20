@@ -1,0 +1,25 @@
+<div><%= flash[:notice] %></div>
+<%= form_for :information, url: show_seances_path do |f| %>
+  <div>
+    <% date = params[:information].present? ? params[:information][:date] : "" %>
+    <%= f.label "Дата:" %>
+    <%= f.text_field :date, value: date %>
+  </div>
+  <div>
+    <% hall = params[:information].present? ? params[:information][:hall] : "" %>
+    <%= f.label "Зал:" %>
+    <%= f.select :hall, options_for_select(@halls_map, hall) %>
+  </div>
+  <div>
+    <%= f.submit :ok %>
+  </div>
+<% end %>
+<% if @current_hall.present? %>
+  <div>
+    <h3>Фильмы на <%= params[:information][:date] %>. В зале <%= @current_hall.name %> </h3>
+    <% @seances.each do |s| %>
+      <%= s.film_name+" "+s.datetime.strftime("%H:%M")+" "+s.price.to_s %><br>
+    <% end %>
+
+  </div>
+<% end %>

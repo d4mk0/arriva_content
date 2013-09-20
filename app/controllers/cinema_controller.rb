@@ -2,56 +2,87 @@
 class CinemaController < ApplicationController
   
   require 'net/http'
-  def index
-    Film.destroy_all
-    uri = URI('http://www.kinomax.ru/index2.php?r=schedule/cinema&id=kolizey')
+  def parse_seances
+    kolizey = Cinema.where(:name => "Колизей").first
+    megapolis = Cinema.where(:name => "Мегаполис").first
+    starlight = Cinema.where(:name => "Старлайн").first
+    kinomax_parse(kolizey)
+    kinomax_parse(megapolis)
+    flash[:notice] = "Парсинг прошел"
+    redirect_to root_path
+  end
+  
+  def show_seances
+    @halls = Hall.all
+    @halls_map = @halls.map { |h| ['['+h.cinema.name+'] '+h.name, h.id] }
+    if params[:information].present?
+      hall = params[:information][:hall]
+      @current_hall = Hall.where(id: params[:information][:hall]).first
+      date = Time.parse(params[:information][:date])
+      @seances = Seance.order(:datetime ).
+        where("hall_id = ? AND datetime > ? AND datetime < ?", hall, date, date.end_of_day)
+    end
+  end
+  
+  def create
+    if Cinema.create(params[:cinema])
+      flash[:notice] = "Кинотеатр \""+params[:cinema][:name]+"\" был добавлен"
+    else
+      flash[:notice] = "Не добавлен"
+    end
+    redirect_to cinema_new_path
+  end
+  
+  def new
+    @cinemas = Cinema.all
+  end
+  
+  def create_hall
+    if Hall.create(params[:hall])
+      flash[:notice] = "Кинозал \""+params[:hall][:name]+"\" был добавлен"
+    else
+      flash[:notice] = "Не добавлен"
+    end
+    redirect_to new_hall_path
+  end
+  
+  def new_hall
+    @cinemas = Cinema.all
+    @cinemas_map = @cinemas.map {|c| [c.name, c.id]}
+  end
+  
+  def kinomax_parse(cinema)
+    uri = URI(cinema.schedule_address)
     response = Net::HTTP.get_response(uri)
     @source = response.body
     @page = Nokogiri::HTML(response.body)
     @films = @page.css('.filmdesc')
-    @dates = {}
-    @films_hash = {}
-    @all_films = []
-    @counter = 0
     @films.each do |film|
       filmname = film.css('h1').first.text
-      @films_hash[filmname] = {}
       film.css('tr').each do |row|
         day = row.css('.week-day').first
         if day
           date = Time.parse(day.text[4,5]+".2013").strftime("%d.%m.%Y")
-          @films_hash[filmname][date] = {}
           row.css('.time span').each do |time|
             anchor = time.css('a').first
-            holl = ''
             cinema_information = anchor.present? ? anchor : time
             cinema_information['onmouseover'] =~ %r{.*\('(.*,).'(.*)'}
-            holl = $2
+            hall = $2
             cinema_information['onmouseover'] =~ %r{.*: (\d*)}
             price = $1
-            @films_hash[filmname][date][holl] = "" unless @films_hash[filmname][date][holl]
             if time.text =~ %r{(([0-1]\d|2[0-3]):([0-5][0-9]))}
-              @films_hash[filmname][date][holl] += $1+" "+price+" "
-              Film.create(
-                :hall_name => holl,
-                :date => date,
-                :name => filmname,
-                :time => $1,
-                :price => price
+              datetime = Time.parse($1+" "+date)
+              hall = cinema.halls.where(name: hall).first
+              Seance.create(
+                hall: hall,
+                datetime: datetime,
+                film_name: filmname,
+                price: price
               )
-              @counter += 1
             end
           end
         end
       end
-    end
-    @films = Film.where(:hall_name => "VIP зал", :date =>"19.09.2013")
-    
-  end
-  
-  def show_films
-    if params[:information].present?
-      @films = Film.order(:time).where(:hall_name => params[:information][:hall], :date => params[:information][:date])
     end
   end
 end

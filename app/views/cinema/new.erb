@@ -1,0 +1,22 @@
+<h2>Добавление кинотеатра</h2>
+<div><%= flash[:notice] %></div>
+<%= form_for :cinema, url: cinema_create_path do |f| %>
+  <div>
+    <%= f.label "Название"%>
+    <%= f.text_field :name %>
+  </div>
+  <div>
+    <%= f.label "Адрес с расписаниями" %>
+    <%= f.text_field :schedule_address, :size => 100 %>
+  </div>
+  <div>
+    <%= f.submit %>
+  </div>
+<% end %>
+<div>
+  <h4>Все кинотеатры:</h4>
+  <% @cinemas.each do |c| %>
+    <% link = link_to c.schedule_address, c.schedule_address, target: "_blank" %>
+    <div><%= (c.name+" => "+link).html_safe %></div>
+  <% end %>
+</div>
