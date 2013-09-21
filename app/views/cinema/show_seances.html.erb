@@ -1,4 +1,3 @@
-<div><%= flash[:notice] %></div>
 <%= form_for :information, url: show_seances_path do |f| %>
   <div>
     <% date = params[:information].present? ? params[:information][:date] : "" %>

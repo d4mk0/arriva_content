@@ -13,6 +13,7 @@
     <%= link_to "Добавить кинозал", new_hall_path %>
     <%= link_to "Спарсить сеансы", parse_seances_path %>
   </div>
+  <div><%= flash[:notice] %></div>
 <%= yield %>
 
 </body>
