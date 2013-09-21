@@ -15,9 +15,9 @@ class CinemaController < ApplicationController
   def show_seances
     @halls = Hall.all
     @halls_map = @halls.map { |h| ['['+h.cinema.name+'] '+h.name, h.id] }
-    if params[:information].present?
+    if params[:information].present? and params[:information][:date].present?
       @current_hall = Hall.where(id: params[:information][:hall]).first
-      @seances = seances_for_day(params[:information][:hall], params[:information][:date])
+      @seances = Seance.seances_for_day(params[:information][:hall], params[:information][:date])
     end
   end
   

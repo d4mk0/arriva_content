@@ -9,9 +9,11 @@ class Seance < ActiveRecord::Base
     Seance.where(:film_name => film_name, :datetime => datetime, :hall_id => hall).blank?
   end
   
-  def seances_for_day(hall, date)
-    date = Time.parse(date)
-    Seance.order(:datetime ).
-        where("hall_id = ? AND datetime > ? AND datetime < ?", hall, date, date.end_of_day)
+  def self.seances_for_day(hall, date)
+    if hall.present? and date.present?
+      date = Time.parse(date)
+      Seance.order(:datetime ).
+          where("hall_id = ? AND datetime > ? AND datetime < ?", hall, date, date.end_of_day)
+    end
   end
 end
