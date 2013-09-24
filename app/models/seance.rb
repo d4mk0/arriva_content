@@ -16,4 +16,10 @@ class Seance < ActiveRecord::Base
           where("hall_id = ? AND datetime > ? AND datetime < ?", hall, date, date.end_of_day)
     end
   end
+  
+  def self.change_film_name(old_name, new_name)
+    Seance.where(:film_name => old_name).each do |s|
+      s.update_attribute(:film_name, new_name)
+    end
+  end
 end

@@ -13,4 +13,6 @@ ArrivaContent::Application.routes.draw do
   get 'parse_seances' => 'cinema#parse_seances'
   
   get 'send_to_arriva' => 'cinema#send_to_arriva'
+  get 'film_name' => 'cinema#film_name'
+  post 'change_film_name' => 'cinema#change_film_name'
 end

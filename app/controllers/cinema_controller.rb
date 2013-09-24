@@ -160,4 +160,12 @@ class CinemaController < ApplicationController
     flash[:notice] = 'Размещено на арриве'
     redirect_to request.referer
   end
+  
+  def change_film_name
+    old_name = params[:film][:old_name]
+    new_name = params[:film][:new_name]
+    Seance.change_film_name(old_name, new_name)
+    flash[:notice] = "Все названия \""+old_name+"\" были изменены на \""+new_name+"\""
+    redirect_to film_name_path
+  end
 end
