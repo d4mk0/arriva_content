@@ -15,10 +15,12 @@
 <% end %>
 <% if @current_hall.present? %>
   <div>
-    <h3>Фильмы на <%= params[:information][:date] %>. В зале <%= @current_hall.name %> </h3>
+    <h3>Фильмы на <%= Time.parse(params[:information][:date]).strftime(" %a %d.%m.%Y") %>. В зале <%= '['+@current_hall.cinema.name+'] '+@current_hall.name %> </h3>
     <% @seances.each do |s| %>
       <%= s.film_name+" "+s.datetime.strftime("%H:%M")+" "+s.price.to_s %><br>
     <% end %>
-
+    <h4>
+      <%= link_to "Отправить на arriva.ru", send_to_arriva_path(hall: @current_hall.id, date: params[:information][:date]) %>
+    </h4>
   </div>
 <% end %>

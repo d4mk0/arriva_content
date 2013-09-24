@@ -82,4 +82,33 @@ class CinemaController < ApplicationController
       end
     end
   end
+  
+  def send_to_arriva
+    http = Net::HTTP.new('adm.arriva.ru')
+    path = '/kinoafisha/save_playbill/'
+    seances = Seance.seances_for_day(params[:hall], params[:date])
+    hall = Hall.find(params[:hall])
+    date = Time.parse(params[:date]).strftime("%d.%m.%Y")
+    data = ''
+    unless seances.blank?
+      movies = ''
+      times = ''
+      prices = ''
+      seances.each do |s|
+        movies+=CGI.escape(s.film_name)+'%0D%0A'
+        times+=CGI.escape(s.datetime.strftime("%H:%M"))+'%0D%0A'
+        prices+=CGI.escape(s.price.to_s)+'%0D%0A'
+      end
+      data = 'data%5Bhall%5D='+hall.id_at_arriva.to_s+
+        '&data%5Bdate1%5D='+date+'&data%5Bdate2%5D='+date+
+        '&data%5Bmovies%5D='+movies+'&data%5Btimes%5D='+times+
+        '&data%5Bprices%5D='+prices+'&data_copy='
+      global_data = HashWithIndifferentAccess.new(YAML.load(File.read(File.expand_path('../../../config/global.yml', __FILE__))))
+      par = {'Cookie' => global_data['cookie']}
+      @resp = http.post(path, data, par)
+      @page = Nokogiri::HTML(@resp.body)
+      flash[:notice] = 'Размещено на арриве'
+      redirect_to request.referer
+    end
+  end
 end

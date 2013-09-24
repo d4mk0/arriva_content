@@ -11,4 +11,6 @@ ArrivaContent::Application.routes.draw do
   post 'cinema/create_hall' => 'cinema#create_hall', as: 'create_hall'
   
   get 'parse_seances' => 'cinema#parse_seances'
+  
+  get 'send_to_arriva' => 'cinema#send_to_arriva'
 end
