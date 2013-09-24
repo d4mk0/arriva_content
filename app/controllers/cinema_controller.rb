@@ -5,9 +5,10 @@ class CinemaController < ApplicationController
   def parse_seances
     kolizey = Cinema.where(:name => "Колизей").first
     megapolis = Cinema.where(:name => "Мегаполис").first
-    starlight = Cinema.where(:name => "Старлайн").first
+    starlight = Cinema.where(:name => "Старлайт").first
     kinomax_parse(kolizey)
     kinomax_parse(megapolis)
+    starlight_parse(starlight)
     flash[:notice] = "Парсинг прошел"
     redirect_to root_path
   end
@@ -83,32 +84,80 @@ class CinemaController < ApplicationController
     end
   end
   
+  def starlight_parse(cinema)
+    uri = URI(cinema.schedule_address)
+    response = Net::HTTP.get_response(uri)
+    @source = response.body
+    @page = Nokogiri::HTML(response.body)
+    @dates = @page.css('.multiplex_schedule')
+    @dates.each do |date|
+      films = date.css('.msch_group')
+      date['id'] =~ %r{s_(.*)}
+      date = $1
+      films.each do |film|
+        film.css('.msch_group_title a').first.text =~ %r{(.*)\(}
+        filmname = $1
+        @halls = film.css('.msch_hall_title').text.split(/Зал/)#.first.text =~ %r{"(.*)"}
+        halls = []
+        @halls.each do |h|
+          unless h == @halls.first
+            h =~ %r{(.*)\d{1}D}
+            halls << $1
+          end
+        end
+        lines = film.css('.msch_hall')
+        i = 0
+        lines.each do |line|
+          line.css('a').each do |seance|
+            time = seance.css('b').first.text
+            seance.text =~ %r{:\d{2}(\d*)}
+            price = $1
+            hall = halls[i]
+            hall = cinema.halls.where(name: "Зал"+hall).first
+            datetime = Time.parse(date+" "+time)
+            Seance.create(
+                hall: hall,
+                datetime: datetime,
+                film_name: filmname,
+                price: price
+              )
+          end
+          i+=1
+        end
+      end
+    end
+  end
+  
   def send_to_arriva
     http = Net::HTTP.new('adm.arriva.ru')
     path = '/kinoafisha/save_playbill/'
-    seances = Seance.seances_for_day(params[:hall], params[:date])
     hall = Hall.find(params[:hall])
-    date = Time.parse(params[:date]).strftime("%d.%m.%Y")
+    start_date = Time.parse(params[:date])
+    end_date = Time.parse("02-10-2013")
     data = ''
-    unless seances.blank?
-      movies = ''
-      times = ''
-      prices = ''
-      seances.each do |s|
-        movies+=CGI.escape(s.film_name)+'%0D%0A'
-        times+=CGI.escape(s.datetime.strftime("%H:%M"))+'%0D%0A'
-        prices+=CGI.escape(s.price.to_s)+'%0D%0A'
+    while start_date <= end_date
+      date = start_date.strftime("%d.%m.%Y")
+      seances = Seance.seances_for_day(params[:hall], date)
+      unless seances.blank?
+        movies = ''
+        times = ''
+        prices = ''
+        seances.each do |s|
+          movies+=CGI.escape(s.film_name)+'%0D%0A'
+          times+=CGI.escape(s.datetime.strftime("%H:%M"))+'%0D%0A'
+          prices+=CGI.escape(s.price.to_s)+'%0D%0A'
+        end
+        data = 'data%5Bhall%5D='+hall.id_at_arriva.to_s+
+          '&data%5Bdate1%5D='+date+'&data%5Bdate2%5D='+date+
+          '&data%5Bmovies%5D='+movies+'&data%5Btimes%5D='+times+
+          '&data%5Bprices%5D='+prices+'&data_copy='
+        global_data = HashWithIndifferentAccess.new(YAML.load(File.read(File.expand_path('../../../config/global.yml', __FILE__))))
+        par = {'Cookie' => global_data['cookie']}
+        http.post(path, data, par)
       end
-      data = 'data%5Bhall%5D='+hall.id_at_arriva.to_s+
-        '&data%5Bdate1%5D='+date+'&data%5Bdate2%5D='+date+
-        '&data%5Bmovies%5D='+movies+'&data%5Btimes%5D='+times+
-        '&data%5Bprices%5D='+prices+'&data_copy='
-      global_data = HashWithIndifferentAccess.new(YAML.load(File.read(File.expand_path('../../../config/global.yml', __FILE__))))
-      par = {'Cookie' => global_data['cookie']}
-      @resp = http.post(path, data, par)
-      @page = Nokogiri::HTML(@resp.body)
-      flash[:notice] = 'Размещено на арриве'
-      redirect_to request.referer
+      start_date+=1.day
     end
+    flash[:notice] = 'Размещено на арриве'
+    redirect_to request.referer
   end
 end
